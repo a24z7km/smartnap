@@ -4,16 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Nap - 仮眠スペース予約</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
+    <script src="https://unpkg.com/react-leaflet@4.2.1/umd/react-leaflet.js"></script>
+    
+    <style>
+        /* 地図の高さを確保するためのスタイル */
+        .leaflet-container {
+            height: 250px;
+            width: 100%;
+            border-radius: 0.5rem;
+        }
+    </style>
 </head>
 <body>
     <div id="root"></div>
     <script type="text/babel">
       const { useState, useEffect } = React;
+      // ★追加: React-Leafletから地図コンポーネントを取得
+      const { MapContainer, TileLayer, Marker, Popup } = ReactLeaflet;
 
       // Mock Data
       const mockUser = {
@@ -26,20 +44,19 @@
         bookings: []
       };
 
-      // ★修正点: 画像のパスをGitHubのRaw URLに変更
-      // 下の行の「あなたのユーザー名」をご自身のものに書き換えてください
-      const githubImageUrl = "https://raw.githubusercontent.com/a24z7km/smartnap/main/images/pod-image.jpeg";
-
+      // ★修正点: 各施設に緯度経度(lat, lng)を追加
       const mockVenues = [
         {
           id: 1,
           name: "渋谷スリープボックス",
           type: "オフィスPod",
           address: "東京都渋谷区道玄坂2-1-1",
+          lat: 35.6585,
+          lng: 139.6983,
           distance: 0.3,
           rating: 4.5,
           minPrice: 800,
-          image: githubImageUrl,
+          image: "images/pod-image.jpeg",
           amenities: ["防音", "リクライニング", "電源", "アロマ"],
           rooms: [
             { id: 1, name: "プレミアムPod A", type: "個室", capacity: 1, basePrice: 800 },
@@ -50,11 +67,13 @@
           id: 2,
           name: "新宿ナップステーション",
           type: "オフィスPod",
-          address: "東京都新宿区歌伎町1-2-3",
+          address: "東京都新宿区歌舞伎町1-2-3",
+          lat: 35.6938,
+          lng: 139.7003,
           distance: 0.8,
           rating: 4.2,
           minPrice: 500,
-          image: githubImageUrl,
+          image: "images/pod-image.jpeg",
           amenities: ["防音", "照明調光"],
           rooms: [
             { id: 3, name: "サイレントルーム 1", type: "個室", capacity: 1, basePrice: 500 }
@@ -65,10 +84,12 @@
           name: "六本木タケアナップ",
           type: "オフィスPod",
           address: "東京都港区六本木3-4-5",
+          lat: 35.6658,
+          lng: 139.7312,
           distance: 1.2,
           rating: 4.7,
           minPrice: 1000,
-          image: githubImageUrl,
+          image: "images/pod-image.jpeg",
           amenities: ["防音", "リクライニング", "電源", "照明調光"],
           rooms: [
             { id: 4, name: "エグゼクティブPod", type: "Pod", capacity: 1, basePrice: 1000 }
@@ -89,6 +110,37 @@
         "アロマ": "leaf",
         "照明調光": "sun"
       };
+
+      // ★追加: 地図表示用の新しいコンポーネント
+      function VenuesMapView({ venues, onVenueSelect }) {
+        const tokyoPosition = [35.6895, 139.6917]; // 東京の中心あたり
+
+        return (
+          <MapContainer center={tokyoPosition} zoom={13} scrollWheelZoom={false}>
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            {venues.map(venue => (
+              <Marker 
+                key={venue.id} 
+                position={[venue.lat, venue.lng]}
+                eventHandlers={{
+                  click: () => {
+                    onVenueSelect(venue);
+                  },
+                }}
+              >
+                <Popup>
+                  <b>{venue.name}</b><br/>
+                  {venue.address}<br/>
+                  ¥{venue.minPrice}/15分〜
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
+        );
+      }
 
       function SmartNapApp() {
         const [currentView, setCurrentView] = useState('home');
@@ -112,6 +164,12 @@
           const matchesType = filterType === 'all' || venue.type === filterType;
           return matchesSearch && matchesType;
         }).sort((a, b) => a.distance - b.distance);
+        
+        // ★追加: 地図マーカークリック時の処理
+        const handleMapMarkerClick = (venue) => {
+          setSelectedVenue(venue);
+          setCurrentView('venue-detail');
+        };
 
         const toggleFavorite = (venueId) => {
           setFavorites(prev => 
@@ -125,44 +183,9 @@
           const size = 200;
           const cellSize = size / 20;
           const qrPattern = [
-            [1,1,1,1,1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,1],
-            [1,0,0,0,0,0,1,0,1,1,0,0,1,0,0,0,0,0,0,1],
-            [1,0,1,1,1,0,1,0,0,1,1,0,1,0,1,1,1,0,0,1],
-            [1,0,1,1,1,0,1,0,1,0,0,1,1,0,1,1,1,0,0,1],
-            [1,0,1,1,1,0,1,0,0,1,0,1,1,0,1,1,1,0,0,1],
-            [1,0,0,0,0,0,1,0,1,1,1,0,1,0,0,0,0,0,0,1],
-            [1,1,1,1,1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,1],
-            [0,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0],
-            [1,0,1,1,0,1,1,1,0,1,1,0,1,1,0,0,1,0,1,1],
-            [0,1,0,0,1,0,0,0,1,0,0,1,0,0,1,1,0,1,0,0],
-            [1,1,1,0,0,1,1,1,1,0,1,0,1,1,1,0,1,0,1,1],
-            [0,0,0,1,1,0,0,0,0,1,0,1,0,0,0,1,0,1,0,0],
-            [1,1,1,1,1,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1],
-            [1,0,0,0,0,0,1,0,0,0,1,1,0,1,0,0,0,1,0,0],
-            [1,0,1,1,1,0,1,0,1,1,0,0,1,0,1,1,1,0,1,1],
-            [1,0,1,1,1,0,1,0,0,1,1,1,0,1,0,0,0,1,0,0],
-            [1,0,1,1,1,0,1,0,1,0,0,0,1,0,1,1,1,0,1,1],
-            [1,0,0,0,0,0,1,0,0,1,1,1,0,1,0,0,0,1,0,0],
-            [1,1,1,1,1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,1],
-            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+            [1,1,1,1,1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,1],[1,0,0,0,0,0,1,0,1,1,0,0,1,0,0,0,0,0,0,1],[1,0,1,1,1,0,1,0,0,1,1,0,1,0,1,1,1,0,0,1],[1,0,1,1,1,0,1,0,1,0,0,1,1,0,1,1,1,0,0,1],[1,0,1,1,1,0,1,0,0,1,0,1,1,0,1,1,1,0,0,1],[1,0,0,0,0,0,1,0,1,1,1,0,1,0,0,0,0,0,0,1],[1,1,1,1,1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,1],[0,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0],[1,0,1,1,0,1,1,1,0,1,1,0,1,1,0,0,1,0,1,1],[0,1,0,0,1,0,0,0,1,0,0,1,0,0,1,1,0,1,0,0],[1,1,1,0,0,1,1,1,1,0,1,0,1,1,1,0,1,0,1,1],[0,0,0,1,1,0,0,0,0,1,0,1,0,0,0,1,0,1,0,0],[1,1,1,1,1,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1],[1,0,0,0,0,0,1,0,0,0,1,1,0,1,0,0,0,1,0,0],[1,0,1,1,1,0,1,0,1,1,0,0,1,0,1,1,1,0,1,1],[1,0,1,1,1,0,1,0,0,1,1,1,0,1,0,0,0,1,0,0],[1,0,1,1,1,0,1,0,1,0,0,0,1,0,1,1,1,0,1,1],[1,0,0,0,0,0,1,0,0,1,1,1,0,1,0,0,0,1,0,0],[1,1,1,1,1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,1],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
           ];
-
-          return (
-            <svg width={size} height={size} className="mx-auto">
-              {qrPattern.map((row, i) => 
-                row.map((cell, j) => (
-                  <rect
-                    key={`${i}-${j}`}
-                    x={j * cellSize}
-                    y={i * cellSize}
-                    width={cellSize}
-                    height={cellSize}
-                    fill={cell ? '#000' : '#fff'}
-                  />
-                ))
-              )}
-            </svg>
-          );
+          return (<svg width={size} height={size} className="mx-auto">{qrPattern.map((row, i) => row.map((cell, j) => (<rect key={`${i}-${j}`} x={j * cellSize} y={i * cellSize} width={cellSize} height={cellSize} fill={cell ? '#000' : '#fff'} />)))}</svg>);
         };
 
         const calculatePrice = () => {
@@ -217,11 +240,8 @@
               </div>
             </div>
 
-            <div className="bg-gray-100 p-6 rounded-lg text-center">
-              <i data-lucide="map-pin" className="w-8 h-8 mx-auto mb-2 text-gray-500"></i>
-              <p className="text-gray-600">地図表示エリア</p>
-              <p className="text-sm text-gray-500">現在地周辺の施設を表示</p>
-            </div>
+            {/* ★修正点: 静的なプレースホルダーを実際の地図コンポーネントに置き換え */}
+            <VenuesMapView venues={filteredVenues} onVenueSelect={handleMapMarkerClick} />
 
             <div className="space-y-4">
               <h2 className="text-lg font-semibold text-gray-800">おすすめ施設</h2>
@@ -340,7 +360,7 @@
                 
                 <p className="text-gray-600 mb-4">{selectedVenue.address}</p>
                 
-                <div className="flex gap-2 mb-6">
+                <div className="flex gap-2 mb-6 flex-wrap">
                   {selectedVenue.amenities.map(amenity => (
                     <div key={amenity} className="flex items-center gap-1 bg-gray-100 px-3 py-2 rounded">
                       <i data-lucide={amenityIconNames[amenity]} className="w-4 h-4"></i>
