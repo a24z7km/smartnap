@@ -42,6 +42,9 @@
 
   // 画像は任意の公開URL（GitHub Rawなど）
   const githubImageUrl = "https://raw.githubusercontent.com/a24z7km/smartnap/main/images/pod-image.jpeg";
+  // ▼ 追加：渋谷スーパーホテル用のローカル画像
+  const shibuyaHotelImage = "./images/hotel.jpeg";
+  const shibuyaSingleRoomImage = "./images/singleroom.jpeg";
 
   // ★緯度経度追加済み
   const mockVenues = [
@@ -102,12 +105,12 @@
       distance: 0.3,
       rating: 3.5,
       minPrice: 1000,
-      image: githubImageUrl,
+      image: shibuyaHotelImage, // ▼ 変更：ホテル外観をローカル画像へ
       lat: 35.6590,
       lng: 139.7000,
       amenities: ["防音", "リクライニング", "電源", "アロマ"],
       rooms: [
-        { id: 1, name: "シングルルーム", type: "個室", capacity: 1, basePrice: 1000 },
+        { id: 1, name: "シングルルーム", type: "個室", capacity: 1, basePrice: 1000, image: shibuyaSingleRoomImage }, // ▼ 追加：シングルルーム画像
         { id: 2, name: "スタンダードPod B", type: "半個室", capacity: 1, basePrice: 1000 }
       ]
     }
@@ -438,10 +441,15 @@
               {selectedVenue.rooms.map(room => (
                 <div key={room.id} className="border rounded-lg p-4">
                   <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="font-semibold">{room.name}</h3>
-                      <p className="text-sm text-gray-600">{room.type} • 定員{room.capacity}名</p>
-                      <p className="text-lg font-semibold text-green-600">¥{room.basePrice}/15分</p>
+                    <div className="flex items-center gap-4">
+                      {room.image && (
+                        <img src={room.image} alt={room.name} className="w-20 h-20 rounded object-cover"/>
+                      )}
+                      <div>
+                        <h3 className="font-semibold">{room.name}</h3>
+                        <p className="text-sm text-gray-600">{room.type} • 定員{room.capacity}名</p>
+                        <p className="text-lg font-semibold text-green-600">¥{room.basePrice}/15分</p>
+                      </div>
                     </div>
                     <button
                       onClick={() => { setSelectedRoom(room); setCurrentView('booking'); }}
