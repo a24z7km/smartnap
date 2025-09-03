@@ -62,8 +62,8 @@
       lng: 139.7005,
       amenities: ["防音", "リクライニング", "電源", "アロマ"],
       rooms: [
-        { id: 1, name: "プレミアムPod A", type: "個室", capacity: 1, basePrice: 800 },
-        { id: 2, name: "スタンダードPod B", type: "半個室", capacity: 1, basePrice: 600 }
+        { id: 1, name: "Pod type-A", type: "pod", capacity: 1, basePrice: 800 },
+        { id: 2, name: "Pod type-B", type: "pod", capacity: 1, basePrice: 600 }
       ]
     },
     {
@@ -79,7 +79,7 @@
       lng: 139.7020,
       amenities: ["防音", "照明調光"],
       rooms: [
-        { id: 3, name: "サイレントルーム 1", type: "個室", capacity: 1, basePrice: 500 }
+        { id: 3, name: "スタンダードPod", type: "pod", capacity: 1, basePrice: 500 }
       ]
     },
     {
@@ -89,13 +89,13 @@
       address: "東京都港区六本木3-4-5",
       distance: 1.2,
       rating: 4.7,
-      minPrice: 1000,
+      minPrice: 500,
       image: githubImageUrl,
       lat: 35.6605,
       lng: 139.7293,
       amenities: ["防音", "リクライニング", "電源", "照明調光"],
       rooms: [
-        { id: 4, name: "エグゼクティブPod", type: "Pod", capacity: 1, basePrice: 1000 }
+        { id: 4, name: "スタンダードPod", type: "Pod", capacity: 1, basePrice: 500 }
       ]
     },
     {
@@ -112,7 +112,7 @@
       amenities: ["防音", "リクライニング", "電源", "アロマ"],
       rooms: [
         { id: 1, name: "シングルルーム", type: "個室", capacity: 1, basePrice: 1000, image: shibuyaSingleRoomImage }, // ▼ 追加：シングルルーム画像
-        { id: 2, name: "スタンダードPod B", type: "半個室", capacity: 1, basePrice: 1000, image: "./images/pod-image.jpeg" } // ▼ 追加：Pod画像
+        { id: 2, name: "スタンダードPod", type: "半個室", capacity: 1, basePrice: 500, image: "./images/pod-image.jpeg" } // ▼ 追加：Pod画像
       ]
     }
   ];
